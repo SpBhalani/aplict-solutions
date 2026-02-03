@@ -1,0 +1,133 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Icon from '@/components/ui/AppIcon';
+
+interface CapabilityLink {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+interface CapabilitiesSidebarProps {
+  capabilities: CapabilityLink[];
+}
+
+export default function CapabilitiesSidebar({ capabilities }: CapabilitiesSidebarProps) {
+  const [activeSection, setActiveSection] = useState('');
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const updateActiveSection = () => {
+      const scrollPosition = window.scrollY + 150; // Offset for header
+      
+      // Find which section is currently in view
+      for (let i = capabilities.length - 1; i >= 0; i--) {
+        const element = document.getElementById(capabilities[i].id);
+        if (element) {
+          const elementTop = element.offsetTop;
+          if (scrollPosition >= elementTop) {
+            setActiveSection(capabilities[i].id);
+            return;
+          }
+        }
+      }
+      
+      // If no section found, set first one as active
+      if (capabilities.length > 0) {
+        setActiveSection(capabilities[0].id);
+      }
+    };
+
+    // Initial check
+    updateActiveSection();
+
+    // Observer for more precise detection
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.2) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { threshold: [0, 0.2, 0.5], rootMargin: '-120px 0px -50% 0px' }
+    );
+
+    // Observe all capability sections
+    capabilities.forEach((capability) => {
+      const element = document.getElementById(capability.id);
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    // Also listen to scroll for fallback
+    window.addEventListener('scroll', updateActiveSection, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', updateActiveSection);
+    };
+  }, [capabilities]);
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 100;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  return (
+    <div 
+      className={`fixed left-1/2 -translate-x-1/2 z-40 transition-all duration-300 ${
+        isScrolled ? 'bottom-6' : 'bottom-6'
+      }`}
+    >
+      <div className="glass rounded-full px-3 py-2 md:px-4 md:py-2.5 lg:px-6 lg:py-3 flex items-center gap-2 md:gap-3 shadow-2xl border border-white/10 backdrop-blur-xl">
+        {capabilities.map((capability) => {
+          const isActive = activeSection === capability.id;
+          return (
+            <button
+              key={capability.id}
+              onClick={() => {
+                scrollToSection(capability.id);
+                // Update active section immediately on click
+                setActiveSection(capability.id);
+              }}
+              className={`relative flex items-center gap-2 px-2.5 py-2 md:px-3 md:py-2.5 lg:px-4 lg:py-2.5 rounded-full transition-all duration-300 group ${
+                isActive
+                  ? 'bg-primary text-white shadow-lg scale-105'
+                  : 'hover:bg-white/10 text-muted-foreground hover:text-foreground'
+              }`}
+              title={capability.label}
+              aria-label={capability.label}
+            >
+              <Icon name={capability.icon as any} size={18} className="md:w-5 md:h-5 shrink-0" />
+              {/* Show label on larger screens */}
+              <span className="hidden lg:block text-xs md:text-sm font-semibold whitespace-nowrap">
+                {capability.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
