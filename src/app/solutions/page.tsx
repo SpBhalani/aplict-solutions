@@ -6,7 +6,7 @@ import ProcessTimeline from '@/components/services/ProcessTimeline';
 import ExpertiseInsights from '@/components/services/ExpertiseInsights';
 import TechStackGrid from '@/components/services/TechStackGrid';
 import Icon from '@/components/ui/AppIcon';
-import Link from 'next/link';
+import Link from 'next/link'; 
 
 export const metadata: Metadata = {
   title: 'Solutions | Aplict Solutions - Performance Optimization, Digital Transformation, Legacy Modernization',
